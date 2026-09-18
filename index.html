@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>오늘의 진짜 정보판 — 데이터가 안 올 때</title>
+<style>
+:root{--bg:#07101c;--panel:#0e1a2a;--line:#2d4666;--text:#edf5ff;--muted:#9fb2ca;--accent:#75dcff;--good:#8df3b3;--warn:#ffd27c;--bad:#ff8199;--stale:#c8a9ff}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#173457 0,#07101c 58%,#040810 100%);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{padding:18px}.app{max-width:1180px;margin:auto}header{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:14px}
+h1{margin:0;font-size:clamp(24px,4vw,38px)}header p{margin:5px 0 0;color:var(--muted);font-size:13px}.card{background:rgba(14,26,42,.96);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 14px 45px #0005}
+.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}.current{min-height:320px;position:relative;overflow:hidden;background:linear-gradient(135deg,#152d49,#101a2d)}
+.current .sun{position:absolute;right:11%;top:16%;width:90px;height:90px;border-radius:50%;background:#fff0a4;box-shadow:0 0 55px #ffe99188}.current .cloud{position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(180deg,transparent,#08111ec7)}
+.current-content{position:relative;z-index:1;display:flex;height:100%;flex-direction:column;justify-content:flex-end}.label{font-size:12px;color:var(--muted)}.value{font-size:76px;line-height:1;font-weight:900;letter-spacing:-3px;margin:4px 0}.unit{font-size:30px;color:#cfe8ff}.sub{font-size:14px;color:#bfd1e7}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.meta div{background:#07111fc9;border:1px solid #314763;border-radius:10px;padding:10px}.meta b{display:block;margin-top:3px;font-size:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}button{border:1px solid #466483;background:#142840;color:var(--text);border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}button:hover{filter:brightness(1.14)}button.primary{background:#145671;border-color:#70ddff}button.danger{background:#4a202b;border-color:#7a3448}
+.status{padding:10px;border-radius:10px;background:#091322;border:1px solid #29415e;font-size:12px;line-height:1.5}.status.good{color:var(--good);border-color:#2d6b4b}.status.bad{color:var(--bad);border-color:#704051}.status.stale{color:var(--stale);border-color:#574b80}.status.warn{color:var(--warn);border-color:#715a2e}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}h2{font-size:16px;margin:0 0 11px}.section{border-top:1px solid #253a55;margin-top:14px;padding-top:14px}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:8px 7px;border-bottom:1px solid #22364f;text-align:left;vertical-align:top}th{color:#9fb5d1}.delta-up{color:var(--bad)}.delta-down{color:var(--good)}
+.test-panel{display:none}.test-panel.open{display:block}.test-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;background:#10233a;border-color:#456789;margin-top:6px}.test-toggle .arrow{transition:transform .15s ease}.test-toggle.open .arrow{transform:rotate(180deg)}.fixture-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.fixture-grid button{font-size:11px;padding:8px 5px}.legend{display:flex;gap:8px;flex-wrap:wrap}.pill{padding:5px 7px;border-radius:99px;font-size:11px;border:1px solid #314b6a;background:#091423;color:#cbd8e8}
+.note{font-size:11px;color:var(--muted);line-height:1.55}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;overflow-wrap:anywhere}.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kpi div{background:#0a1524;border:1px solid #263d59;border-radius:10px;padding:10px}.kpi span{display:block;color:var(--muted);font-size:11px}.kpi b{font-size:17px}
+footer{text-align:center;color:#7187a1;font-size:11px;padding:13px 0}@media(max-width:850px){.hero,.grid{grid-template-columns:1fr}.fixture-grid{grid-template-columns:repeat(2,1fr)}.meta{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div><h1>오늘의 진짜 정보판</h1><p>데이터가 잘 올 때뿐 아니라, 안 올 때도 마지막 정상값과 현재 상태를 숨기지 않습니다.</p></div>
+<div class="actions"><button id="refresh" class="primary">실제 데이터 조회</button><button id="clear" class="danger">일별 기록 초기화</button></div>
+</header>
+
+<section class="hero">
+<article class="card current"><div class="sun"></div><div class="cloud"></div><div class="current-content">
+<div class="label">서울 · 2m 기온</div>
+<div><span id="temp" class="value">—</span><span class="unit"> °C</span></div>
+<div id="stateText" class="sub">아직 실제 데이터를 조회하지 않았습니다.</div>
+<div class="meta">
+<div><span class="label">출처 시각</span><b id="sourceTime">—</b></div>
+<div><span class="label">조회 시각</span><b id="fetchedAt">—</b></div>
+<div><span class="label">기준 시간대</span><b id="zone">Asia/Seoul (KST)</b></div>
+</div></div></article>
+
+<aside class="card">
+<h2>현재 데이터 상태</h2><div id="status" class="status warn">대기 중</div>
+<div class="section"><div class="kpi"><div><span>마지막 정상값</span><b id="lastValue">없음</b></div><div><span>최근 정상 날짜</span><b id="lastDate">없음</b></div></div></div>
+<div class="section"><h2>정상 데이터 대조</h2><div class="note">원자료 → 저장값 → 화면값이 같은지를 확인할 수 있습니다.</div>
+<p class="mono" id="rawLine">원자료: —</p><p class="mono" id="savedLine">저장값: —</p><p class="mono" id="screenLine">화면값: —</p></div>
+<div class="section"><h2>출처</h2><p class="note">Open-Meteo Forecast API · 서울 좌표 · 현재 2m 기온</p><p class="mono">https://api.open-meteo.com/v1/forecast</p></div>
+</aside>
+</section>
+
+<section class="grid">
+<section class="card"><h2>일별 기록 · 기준 날짜는 KST</h2><div class="legend"><span class="pill">FRESH = 정상</span><span class="pill">STALE = 마지막 정상값 유지</span><span class="pill">ERROR = 현재 조회 실패</span></div>
+<div class="section"><table><thead><tr><th>날짜</th><th>값</th><th>단위</th><th>어제 대비</th><th>출처 시각</th><th>조회 시각</th></tr></thead><tbody id="history"><tr><td colspan="6">아직 기록이 없습니다.</td></tr></tbody></table></div></section>
+
+<section class="card"><h2>카드 3 · T04 테스트 모드</h2>
+<p class="note">과제 제출용 공개 화면에서는 테스트 버튼을 접어두고, 필요할 때만 테스트 모드를 펼쳐 fixture를 재생합니다.</p>
+<button id="testToggle" class="test-toggle" type="button"><span>T04 fixture 테스트 열기</span><span class="arrow">▼</span></button>
+<div id="testPanel" class="test-panel">
+<div class="section"><div class="actions"><button id="replayReset">Replay 초기화</button><button id="replayD1A">D1-A · 100</button><button id="replayD1B">D1-B · 105</button><button id="replayD2">D2 · 120</button></div></div>
+<div class="section fixture-grid"><button data-fixture="timeout">느린 응답</button><button data-fixture="auth-401">401/403</button><button data-fixture="rate-429">호출 제한</button><button data-fixture="offline">오프라인</button><button data-fixture="schema-break">형식 변경</button></div>
+<div class="section"><div class="actions"><button id="retry" class="primary">다시 시도</button><button id="recover" class="primary">T04-RECOVER-D2</button></div><div id="fixtureStatus" class="status" style="margin-top:8px">Replay 대기 · 실제 측정 기록은 변경하지 않습니다.</div></div>
+<div class="section"><div class="kpi"><div><span>Replay 상태</span><b id="replayFreshness">—</b></div><div><span>error_code</span><b id="replayError">none</b></div><div><span>행 수</span><b id="replayRows">0</b></div><div><span>마지막 정상값</span><b id="replayLast">없음</b></div></div></div>
+<div class="section"><h2>Replay 일별 기록</h2><table><thead><tr><th>record_date</th><th>값</th><th>어제 대비</th><th>source_time</th><th>fixture</th></tr></thead><tbody id="replayHistory"><tr><td colspan="5">아직 replay 기록이 없습니다.</td></tr></tbody></table></div>
+<div class="section"><h2>실패별 다음 행동</h2><table><tbody>
+<tr><td>느림</td><td>잠시 후 다시 시도</td></tr><tr><td>401/403</td><td>접근 권한/출처 설정 확인</td></tr><tr><td>호출 제한</td><td>요청 빈도 줄이고 나중에 재시도</td></tr><tr><td>오프라인</td><td>네트워크 복구 후 다시 시도</td></tr><tr><td>형식 변경</td><td>응답 형식 확인 후 어댑터 수정</td></tr>
+</tbody></table></div>
+<div class="section"><p class="note mono" id="assetInfo"></p></div>
+</div></section>
+</section>
+
+<section class="card" style="margin-top:14px"><h2>과제 확인 정보</h2><div class="grid" style="margin-top:0">
+<div><p class="note"><b>실제 데이터:</b> 실제 데이터 조회는 공개 Open-Meteo API에서 현재 서울 2m 기온을 읽습니다. API는 Asia/Seoul 시간대를 요청하고 브라우저 조회 시각도 KST로 기록합니다.</p>
+<p class="note"><b>실제 이틀:</b> 성공 조회일을 KST 날짜 키로 한 건만 저장합니다. 서로 다른 실제 날짜에 한 번씩 성공 조회해야 실제 2건이 됩니다. 미래 날짜를 가짜로 채우지 않습니다.</p></div>
+<div><p class="note"><b>실패 보존:</b> 실패 재생 중에는 마지막 정상값을 지우지 않고 STALE/ERROR 상태로 표시합니다.</p><p class="note"><b>공개 안전:</b> API 키·로그인·개인정보 입력이 없습니다.</p></div>
+</div></section>
+<footer>Open-Meteo 데이터 사용 시 출처 표기를 유지하세요. 이 도구는 교육용 비상업 프로토타입입니다.</footer>
+</div>
+
+<script>
+(()=>{"use strict";
+const KEY="realInfoBoard_v1",TZ="Asia/Seoul";
+const API="https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m&timezone=Asia%2FSeoul";
+const T04_ASSET_META={"package_id":"aleph-t04-real-information-board-public-contract-v2","contract_version":"1.1.0","hash_algorithm":"sha256","fixture_count":9};
+const T04_FIXTURES={"auth-401":{"fixture_id":"T04-AUTH-401","contract_version":"1.1.0","description_ko":"외부 출처가 인증을 거절한 응답: auth를 기록한다.","virtual_now":"2026-08-24T10:01:00.000Z","transport":{"mode":"http","status":401,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json"}},"payload":{"message":"unauthorized synthetic fixture"},"expected":{"freshness":"stale","error_code":"auth","row_count":1,"stored_value":105,"delta":null,"preserve_last_good":true}},"normal-d1-a":{"fixture_id":"T04-NORMAL-D1-A","contract_version":"1.1.0","description_ko":"가상 1일차 첫 정상 조회: 새 일별 행을 만든다.","virtual_now":"2026-08-24T00:00:00.000Z","transport":{"mode":"http","status":200,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json"}},"payload":{"signal_id":"aleph-demo-index","normalized_value":100,"unit":"pt","source_name":"ALEPH 결정론 replay","source_url":"https://fixtures.aleph.invalid/t04/demo-index","source_time":"2026-08-23T23:59:00.000Z","fetched_at":"2026-08-24T00:00:00.000Z","record_timezone":"Asia/Seoul","record_date":"2026-08-24"},"expected":{"freshness":"fresh","error_code":"none","row_count":1,"stored_value":100,"delta":null,"preserve_last_good":true,"record_date":"2026-08-24"}},"normal-d1-b":{"fixture_id":"T04-NORMAL-D1-B","contract_version":"1.1.0","description_ko":"가상 1일차 두 번째 정상 조회: 새 행 없이 같은 행을 갱신한다.","virtual_now":"2026-08-24T09:00:00.000Z","transport":{"mode":"http","status":200,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json"}},"payload":{"signal_id":"aleph-demo-index","normalized_value":105,"unit":"pt","source_name":"ALEPH 결정론 replay","source_url":"https://fixtures.aleph.invalid/t04/demo-index","source_time":null,"fetched_at":"2026-08-24T09:00:00.000Z","record_timezone":"Asia/Seoul","record_date":"2026-08-24"},"expected":{"freshness":"fresh","error_code":"none","row_count":1,"stored_value":105,"delta":null,"preserve_last_good":true,"same_record_id_as":"T04-NORMAL-D1-A","record_date":"2026-08-24"}},"normal-d2":{"fixture_id":"T04-NORMAL-D2","contract_version":"1.1.0","description_ko":"가상 2일차 정상 조회: 새 행과 전일 대비 +15를 만든다.","virtual_now":"2026-08-25T00:00:00.000Z","transport":{"mode":"http","status":200,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json"}},"payload":{"signal_id":"aleph-demo-index","normalized_value":120,"unit":"pt","source_name":"ALEPH 결정론 replay","source_url":"https://fixtures.aleph.invalid/t04/demo-index","source_time":"2026-08-24T23:59:00.000Z","fetched_at":"2026-08-25T00:00:00.000Z","record_timezone":"Asia/Seoul","record_date":"2026-08-25"},"expected":{"freshness":"fresh","error_code":"none","row_count":2,"stored_value":120,"delta":15,"preserve_last_good":true,"record_date":"2026-08-25"}},"offline":{"fixture_id":"T04-OFFLINE","contract_version":"1.1.0","description_ko":"네트워크 연결 중단: 마지막 정상값을 보존하고 offline을 기록한다.","virtual_now":"2026-08-24T10:03:00.000Z","transport":{"mode":"offline","status":null,"delay_ms":0,"deadline_ms":1500,"headers":{}},"payload":null,"expected":{"freshness":"stale","error_code":"offline","row_count":1,"stored_value":105,"delta":null,"preserve_last_good":true}},"rate-429":{"fixture_id":"T04-RATE-429","contract_version":"1.1.0","description_ko":"외부 출처의 호출 제한 응답: rate_limit과 Retry-After 관측값을 기록한다.","virtual_now":"2026-08-24T10:02:00.000Z","transport":{"mode":"http","status":429,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json","retry-after":"60"}},"payload":{"message":"rate limited synthetic fixture"},"expected":{"freshness":"stale","error_code":"rate_limit","row_count":1,"stored_value":105,"delta":null,"preserve_last_good":true}},"recover-d2":{"fixture_id":"T04-RECOVER-D2","contract_version":"1.1.0","description_ko":"오류 뒤 가상 2일차 재시도 성공: fresh/none으로 회복하고 전일 대비 +15를 만든다.","virtual_now":"2026-08-25T00:00:00.000Z","transport":{"mode":"http","status":200,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json"}},"payload":{"signal_id":"aleph-demo-index","normalized_value":120,"unit":"pt","source_name":"ALEPH 결정론 replay","source_url":"https://fixtures.aleph.invalid/t04/demo-index","source_time":"2026-08-24T23:59:00.000Z","fetched_at":"2026-08-25T00:00:00.000Z","record_timezone":"Asia/Seoul","record_date":"2026-08-25"},"expected":{"freshness":"fresh","error_code":"none","row_count":2,"stored_value":120,"delta":15,"preserve_last_good":true,"record_date":"2026-08-25"}},"schema-break":{"fixture_id":"T04-SCHEMA-BREAK","contract_version":"1.1.0","description_ko":"HTTP 성공이지만 필수값 타입이 바뀐 응답: schema_error를 기록한다.","virtual_now":"2026-08-24T10:04:00.000Z","transport":{"mode":"http","status":200,"delay_ms":20,"deadline_ms":1500,"headers":{"content-type":"application/json"}},"payload":{"signal_id":"aleph-demo-index","normalized_value":"105","unit":"pt","source_name":"ALEPH 결정론 replay","source_url":"https://fixtures.aleph.invalid/t04/demo-index","source_time":null,"fetched_at":"2026-08-24T10:04:00.000Z","record_timezone":"Asia/Seoul","record_date":"2026-08-24"},"expected":{"freshness":"stale","error_code":"schema_error","row_count":1,"stored_value":105,"delta":null,"preserve_last_good":true}},"timeout":{"fixture_id":"T04-TIMEOUT","contract_version":"1.1.0","description_ko":"제한시간보다 늦은 응답: 마지막 정상값을 보존하고 timeout을 기록한다.","virtual_now":"2026-08-24T10:00:00.000Z","transport":{"mode":"timeout","status":null,"delay_ms":5000,"deadline_ms":1500,"headers":{}},"payload":null,"expected":{"freshness":"stale","error_code":"timeout","row_count":1,"stored_value":105,"delta":null,"preserve_last_good":true}}};
+let db=loadDB(),currentRaw=null,fixtureTimer=null;
+
+function loadDB(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{"records":[],"lastNormal":null}');if(!v||!Array.isArray(v.records))throw 0;return{records:v.records,lastNormal:v.lastNormal||null}}catch{return{records:[],lastNormal:null}}}
+function saveDB(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch{}}
+function nowKST(){return new Intl.DateTimeFormat("sv-SE",{timeZone:TZ,dateStyle:"short",timeStyle:"medium"}).format(new Date())}
+function kstDate(){return new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}
+function prettyTime(v){if(!v)return"—";try{return new Intl.DateTimeFormat("ko-KR",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date(v))}catch{return v}}
+function setStatus(cls,msg){const e=document.getElementById("status");e.className="status "+cls;e.textContent=msg}
+function screenTemperature(){const v=document.getElementById("temp").textContent;return v==="—"?null:Number(v)}
+function updateLast(){const r=db.lastNormal;document.getElementById("lastValue").textContent=r?`${r.value.toFixed(1)} °C`:"없음";document.getElementById("lastDate").textContent=r?r.date:"없음"}
+function deltaFor(date,value){const a=db.records.slice().sort((x,y)=>x.date.localeCompare(y.date)),i=a.findIndex(r=>r.date===date);return i<=0?null:+(value-a[i-1].value).toFixed(1)}
+function renderHistory(){const b=document.getElementById("history"),a=db.records.slice().sort((x,y)=>y.date.localeCompare(x.date));if(!a.length){b.innerHTML='<tr><td colspan="6">아직 기록이 없습니다.</td></tr>';return}b.innerHTML=a.map(r=>{const d=deltaFor(r.date,r.value),ds=d===null?"—":`${d>0?"+":""}${d.toFixed(1)} °C`,cl=d>0?"delta-up":d<0?"delta-down":"";return`<tr><td>${r.date}</td><td><b>${r.value.toFixed(1)}</b></td><td>${r.unit}</td><td class="${cl}">${ds}</td><td>${r.sourceTimeLocal}</td><td>${r.fetchedAtLocal}</td></tr>`}).join("")}
+function sync(){updateLast();renderHistory();document.getElementById("rawLine").textContent=currentRaw?`원자료: temperature_2m=${currentRaw.value}`:"원자료: —";const s=db.lastNormal;document.getElementById("savedLine").textContent=s?`저장값: ${s.value.toFixed(1)} °C · ${s.date}`:"저장값: —";const sc=screenTemperature();document.getElementById("screenLine").textContent=sc===null?"화면값: —":`화면값: ${sc.toFixed(1)} °C`}
+function drawNormal(r){document.getElementById("temp").textContent=r.value.toFixed(1);document.getElementById("sourceTime").textContent=r.sourceTimeLocal;document.getElementById("fetchedAt").textContent=r.fetchedAtLocal;document.getElementById("stateText").textContent="정상값 · 공개 원천에서 방금 조회됨";setStatus("good","FRESH · 실제 공개 원천의 정상 응답");sync()}
+function preserveLast(){const r=db.lastNormal;document.getElementById("temp").textContent=r?r.value.toFixed(1):"—";document.getElementById("sourceTime").textContent=r?r.sourceTimeLocal:"—";document.getElementById("fetchedAt").textContent=r?r.fetchedAtLocal:"—";document.getElementById("stateText").textContent=r?"마지막 정상값을 유지하고 있습니다. 현재 조회는 실패했습니다.":"아직 정상값이 없어 표시할 값이 없습니다.";setStatus("stale",r?"STALE · 마지막 정상값 유지":"ERROR · 마지막 정상값 없음");sync()}
+async function fetchReal(){clearTimeout(fixtureTimer);setStatus("warn","조회 중 · 공개 원천에 연결하는 중");document.getElementById("stateText").textContent="실제 데이터를 가져오는 중입니다…";try{const res=await fetch(API,{cache:"no-store"}),data=await res.json();if(!res.ok)throw new Error(`HTTP_${res.status}`);if(!data.current||typeof data.current.temperature_2m!=="number"||typeof data.current.time!=="string")throw new Error("SCHEMA_CHANGED");const record={id:kstDate(),date:kstDate(),value:Number(data.current.temperature_2m),unit:data.current_units?.temperature_2m||"°C",sourceTime:data.current.time,sourceTimeLocal:prettyTime(data.current.time),fetchedAt:new Date().toISOString(),fetchedAtLocal:nowKST(),source:"Open-Meteo Forecast API",url:API};const i=db.records.findIndex(r=>r.date===record.date);if(i>=0)db.records[i]=record;else db.records.push(record);db.lastNormal=record;saveDB();currentRaw={value:record.value};drawNormal(record);document.getElementById("fixtureStatus").className="status good";document.getElementById("fixtureStatus").textContent="실제 조회 성공"}catch(e){preserveLast();document.getElementById("fixtureStatus").className="status bad";document.getElementById("fixtureStatus").textContent=`실제 조회 실패 · ${e.message||"FETCH_ERROR"}`}}
+let replay={records:[],lastGood:null,freshness:"stale",error_code:"none",lastFixture:null};
+let lastFailedFixture=null;
+function setReplayNotice(msg,cls=""){const e=document.getElementById("fixtureStatus");e.className="status "+cls;e.textContent=msg}
+function replayRows(){return replay.records.slice().sort((a,b)=>a.record_date.localeCompare(b.record_date))}
+function replayDeltaFor(date,value){const a=replayRows(),i=a.findIndex(r=>r.record_date===date);return i<=0?null:+(value-a[i-1].normalized_value).toFixed(6)}
+function renderReplay(){const f=replay.freshness||"—",e=replay.error_code||"none";document.getElementById("replayFreshness").textContent=f;document.getElementById("replayError").textContent=e;document.getElementById("replayRows").textContent=String(replay.records.length);document.getElementById("replayLast").textContent=replay.lastGood?`${replay.lastGood.normalized_value} ${replay.lastGood.unit}`:"없음";const body=document.getElementById("replayHistory"),rows=replayRows();if(!rows.length){body.innerHTML='<tr><td colspan="5">아직 replay 기록이 없습니다.</td></tr>';return}body.innerHTML=rows.map(r=>{const d=replayDeltaFor(r.record_date,r.normalized_value);return `<tr><td>${r.record_date}</td><td><b>${r.normalized_value}</b></td><td>${d===null?"—":(d>0?"+":"")+d}</td><td>${r.source_time||"null"}</td><td>${r.fixture_id}</td></tr>`}).join("")}
+function replayReset(){clearTimeout(fixtureTimer);replay={records:[],lastGood:null,freshness:"stale",error_code:"none",lastFixture:null};lastFailedFixture=null;renderReplay();setReplayNotice("Replay 초기화 완료 · 실제 측정 기록은 유지됩니다.","warn")}
+function fixtureFromAsset(key){const f=T04_FIXTURES[key];if(!f)throw new Error("fixture_not_found");return f}
+function normalizeFixture(f){const p=f.payload;if(!p||typeof p.signal_id!=="string"||typeof p.normalized_value!=="number"||typeof p.unit!=="string"||typeof p.source_name!=="string"||typeof p.source_url!=="string"||typeof p.fetched_at!=="string"||p.record_timezone!=="Asia/Seoul"||typeof p.record_date!=="string")throw new Error("schema_error");return {...p,fixture_id:f.fixture_id}}
+function applyReplaySuccess(f){const p=normalizeFixture(f),rec={...p,normalized_value:Number(p.normalized_value)};const i=replay.records.findIndex(r=>r.signal_id===rec.signal_id&&r.record_date===rec.record_date);if(i>=0)replay.records[i]=rec;else replay.records.push(rec);replay.lastGood=rec;replay.freshness="fresh";replay.error_code="none";replay.lastFixture=f.fixture_id;renderReplay();setReplayNotice(`✓ ${f.fixture_id} · fresh / none · 행 ${replay.records.length}건`,"good")}
+function applyReplayFailure(f){replay.freshness="stale";replay.error_code=f.expected.error_code;replay.lastFixture=f.fixture_id;renderReplay();const retry=f.transport&&f.transport.headers&&f.transport.headers["retry-after"]?` · Retry-After ${f.transport.headers["retry-after"]}s`:"";setReplayNotice(`✓ ${f.fixture_id} · stale / ${f.expected.error_code} · 마지막 정상값 ${replay.lastGood?replay.lastGood.normalized_value+" "+replay.lastGood.unit:"없음"}${retry}`,"stale")}
+function replayFixture(key){clearTimeout(fixtureTimer);const f=fixtureFromAsset(key);if(f.fixture_id==="T04-TIMEOUT"){replay.freshness="stale";replay.error_code="timeout";replay.lastFixture=f.fixture_id;renderReplay();setReplayNotice(`시험 중 · ${f.fixture_id} · deadline ${f.transport.deadline_ms}ms`,"warn");fixtureTimer=setTimeout(()=>applyReplayFailure(f),Math.min(f.transport.deadline_ms+100,1800));lastFailedFixture=key;return}if(f.fixture_id.startsWith("T04-NORMAL")||f.fixture_id==="T04-RECOVER-D2")applyReplaySuccess(f);else applyReplayFailure(f);if(!f.fixture_id.startsWith("T04-NORMAL")&&f.fixture_id!=="T04-RECOVER-D2")lastFailedFixture=key}
+function showAssetInfo(){const m=T04_ASSET_META;document.getElementById("assetInfo").textContent=`fixture package: ${m.package_id} · contract ${m.contract_version} · ${m.fixture_count} fixtures · ${m.hash_algorithm}`}
+
+function recover(){replayFixture("recover-d2")}
+document.getElementById("testToggle").onclick=()=>{const panel=document.getElementById("testPanel"),btn=document.getElementById("testToggle"),open=!panel.classList.contains("open");panel.classList.toggle("open",open);btn.classList.toggle("open",open);btn.querySelector("span:first-child").textContent=open?"T04 fixture 테스트 닫기":"T04 fixture 테스트 열기";};
+document.getElementById("refresh").onclick=fetchReal;
+document.getElementById("retry").onclick=()=>{if(lastFailedFixture)replayFixture(lastFailedFixture);else setReplayNotice("먼저 실패 fixture를 재생하세요.","warn")};
+document.querySelectorAll("[data-fixture]").forEach(b=>b.onclick=()=>replayFixture(b.dataset.fixture));
+document.getElementById("recover").onclick=recover;
+document.getElementById("replayReset").onclick=replayReset;
+document.getElementById("replayD1A").onclick=()=>replayFixture("normal-d1-a");
+document.getElementById("replayD1B").onclick=()=>replayFixture("normal-d1-b");
+document.getElementById("replayD2").onclick=()=>replayFixture("normal-d2");
+document.getElementById("clear").onclick=()=>{if(confirm("일별 실제 기록과 마지막 정상값을 초기화할까요?")){db={records:[],lastNormal:null};saveDB();currentRaw=null;document.getElementById("temp").textContent="—";document.getElementById("sourceTime").textContent="—";document.getElementById("fetchedAt").textContent="—";document.getElementById("stateText").textContent="기록이 초기화되었습니다.";setStatus("warn","대기 중");sync()}};
+sync();renderReplay();showAssetInfo();
+if(db.lastNormal)drawNormal(db.lastNormal);
+})();
+</script>
+</body>
+</html>
